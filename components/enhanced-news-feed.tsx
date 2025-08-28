@@ -23,7 +23,8 @@ import ChatDialog from "./ChatDialog"
 
 // Add this interface near the top of your file
 
-const url = "http://34.68.130.177";
+// Using local API routes to proxy backend calls and avoid HTTPS/HTTP mixed content issues
+const API_BASE = '';
 
 interface Article {
   publishedAt: string | number | Date;
@@ -45,7 +46,7 @@ const fetchNews = async (
   category: string
 ): Promise<Article[]> => {
   try {
-    const response = await fetch(`${url}/get_daily_news`, {
+    const response = await fetch(`${API_BASE}/api/news`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -179,7 +180,7 @@ export function EnhancedNewsFeedComponent() {
     setSummaries({ ...summaries, aggregate: "Summarizing..." });
 
     try {
-      const response = await fetch(`${url}/summarize?urls=${articleIds.join(',')}`);
+      const response = await fetch(`${API_BASE}/api/summarize?urls=${articleIds.join(',')}`);
       console.log("Response status:", response.status);
 
       if (!response.ok) {
@@ -215,7 +216,7 @@ export function EnhancedNewsFeedComponent() {
     setIsLoading(true);
 
     try {
-      const response = await fetch(`${url}/get_audio?urls=${articleIds.join(',')}`);
+      const response = await fetch(`${API_BASE}/api/get-audio?urls=${articleIds.join(',')}`);
 
       if (!response.ok) {
         throw new Error('Network response was not ok');
@@ -265,7 +266,7 @@ export function EnhancedNewsFeedComponent() {
 
     try {
       // Make a request for the first article or handle it differently if needed
-      const response = await fetch(`${url}/chat?urls=${articleIds.join(",")}`); // Join IDs into a comma-separated string
+      const response = await fetch(`${API_BASE}/api/chat-init?urls=${articleIds.join(",")}`); // Join IDs into a comma-separated string
       if (!response.ok) {
         throw new Error('Network response was not ok');
       }
@@ -292,7 +293,7 @@ export function EnhancedNewsFeedComponent() {
     }
     setChatInput("")
     try {
-      const response = await fetch(`${url}/continue_chat`, {
+      const response = await fetch(`${API_BASE}/api/continue-chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
