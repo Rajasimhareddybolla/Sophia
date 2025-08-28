@@ -23,7 +23,7 @@ import ChatDialog from "./ChatDialog"
 
 // Add this interface near the top of your file
 
-const url = "https://sophia-v0.azurewebsites.net";
+const url = "http://34.68.130.177";
 
 interface Article {
   publishedAt: string | number | Date;
@@ -66,7 +66,8 @@ const fetchNews = async (
 
 
     // ai ml ar vr block chain
-    const allNews = data
+
+  const allNews = (data?.Articles || [])
     .filter((item: Article) => item.title !== "[Removed]" && !item.content.includes("Removed") && item.content.length > 40 )
     .map((item: Article) => ({
 
@@ -80,11 +81,12 @@ const fetchNews = async (
       label: item.label,
     }));
 
-    return allNews.filter(
-      (article: Article) =>
-        article.title.toLowerCase().includes(searchTerm.toLowerCase()) &&
-        (category === 'All' || article.label === category)
-    ).slice((page - 1) * 10, page * 10);
+  return allNews.filter(
+    (article: Article) =>
+      article.title.toLowerCase().includes(searchTerm.toLowerCase()) &&
+      (category === 'All' || article.label === category)
+  ).slice((page - 1) * 10, page * 10);
+
   } catch (error) {
     console.error('Fetch News Error:', error);
     return [];
@@ -209,31 +211,24 @@ export function EnhancedNewsFeedComponent() {
     setPage(1); // Reset page number to 1
   };
   const handleConvertToAudio = async (articleIds: number[]) => {
-    setAudioMessages({ aggregate: "Converting to audio..." });
+    setAudioMessages(prev => ({ ...prev, aggregate: "Converting to audio..." }));
     setIsLoading(true);
 
     try {
-      // Send request to Flask backend with article IDs
       const response = await fetch(`${url}/get_audio?urls=${articleIds.join(',')}`);
 
       if (!response.ok) {
         throw new Error('Network response was not ok');
       }
 
-      // Get the audio file URL directly from the response
       const blob = await response.blob();
-      const audioUrl = URL.createObjectURL(blob); // Create a blob URL for the audio file
+      const audioUrl = URL.createObjectURL(blob);
 
-      // Only set the audio message for the last article
-      const lastArticleId = articleIds[articleIds.length - 1];
-      setAudioMessages(prevMessages => ({
-        ...prevMessages,
-        [lastArticleId]: audioUrl // Store the blob URL
-      }));
+      setAudioMessages(prev => ({ ...prev, aggregate: audioUrl }));
 
     } catch (error) {
       console.error("Error converting to audio:", error);
-      setAudioMessages({ aggregate: "Error occurred while converting to audio." });
+      setAudioMessages(prev => ({ ...prev, aggregate: "Error occurred while converting to audio." }));
     } finally {
       setIsLoading(false);
     }
@@ -507,6 +502,44 @@ export function EnhancedNewsFeedComponent() {
                   >
                     {summaries.aggregate}
                   </ReactMarkdown>
+                  { audioMessages.aggregate && typeof audioMessages.aggregate === 'string' && !audioMessages.aggregate.startsWith('Converting') && !audioMessages.aggregate.startsWith('Error') && (
+                    <div className="mt-4">
+                      <strong className="text-blue-300 text-sm">Aggregate Audio:</strong>
+                      <div className="flex items-center gap-2 mt-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => toggleAudioPlayback('aggregate')}
+                          className="text-blue-400 hover:text-blue-300"
+                        >
+                          {playingAudio === 'aggregate' ? (
+                            <PauseCircle className="h-4 w-4" />
+                          ) : (
+                            <PlayCircle className="h-4 w-4" />
+                          )}
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={() => downloadAudio('aggregate')} 
+                          className="text-gray-400 hover:text-gray-200"
+                        >
+                          <Download className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      {playingAudio === 'aggregate' && (
+                        <audio
+                          autoPlay
+                          controls
+                          className="mt-2 w-full"
+                          onEnded={() => setPlayingAudio(null)}
+                        >
+                          <source src={audioMessages.aggregate} type="audio/mpeg" />
+                          Your browser does not support the audio tag.
+                        </audio>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
             </ScrollArea>
